@@ -1,0 +1,69 @@
+/* analyst.css - Stage 3: analyst dashboard + protected analysis workspace.
+   Colours: blue #2a78d6 and orange #eb6834 are the validated categorical pair
+   (blue = above / positive, orange = below / negative). */
+
+.page-wide { max-width: 1180px; }
+
+/* ---- dashboard: dataset cards ---- */
+.ds-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 18px; }
+.ds-card { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 20px;
+           display: flex; flex-direction: column; gap: 12px; }
+.ds-card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.ds-card h3 { margin: 0; font-size: 17px; line-height: 1.3; }
+.ds-desc { margin: 0; color: var(--muted); font-size: 13.5px; line-height: 1.45; min-height: 20px; }
+.ds-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 12px 0;
+            border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.ds-stat b { display: block; font-size: 21px; font-variant-numeric: tabular-nums; }
+.ds-stat span { font-size: 12.5px; color: var(--muted); }
+.ds-meta { font-size: 13px; color: var(--muted); line-height: 1.5; }
+.ds-card .btn { align-self: flex-start; margin-top: auto; }
+
+.spark { min-height: 96px; }
+.spark-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 4px; }
+.spark-title { font-size: 13px; font-weight: 600; word-break: break-word; }
+.spark-empty { min-height: 96px; display: flex; align-items: center; color: var(--muted); font-size: 13px; }
+.spark-foot { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+/* ---- workspace ---- */
+.crumbs { margin-bottom: 14px; }
+.title-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.title-row h1 { margin: 0; }
+.ws-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.protect-toggle { margin: 0; }
+
+.filters { display: flex; flex-wrap: wrap; gap: 14px 18px; align-items: flex-end; }
+.filter label { margin: 0 0 4px; font-size: 12.5px; color: var(--muted); }
+.filters select, .filters input { width: auto; min-width: 150px; margin: 0; padding: 7px 9px;
+                                  font-size: 14px; background: #fff; }
+.filter-pair { display: flex; gap: 8px; align-items: center; }
+.filter-pair span { color: var(--muted); font-size: 13px; }
+.loading-bar { height: 3px; margin: 14px 0 -17px; background: #e5eaf0; border-radius: 2px; overflow: hidden; }
+.loading-bar > div { height: 100%; width: 35%; background: var(--primary); animation: slide 1s ease-in-out infinite; }
+@keyframes slide { 0% { margin-left: -35%; } 100% { margin-left: 100%; } }
+
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; margin-bottom: 20px; }
+.kpi { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 16px 18px; }
+.kpi-label { font-size: 13px; color: var(--muted); }
+.kpi-value { font-size: 26px; font-weight: 650; margin: 4px 0 2px; font-variant-numeric: tabular-nums; }
+.kpi-note { font-size: 12.5px; color: var(--muted); }
+
+.chart-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; margin-bottom: 20px; }
+.chart-card { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 18px 18px 12px; min-width: 0; }
+.chart-card h3 { margin: 0 0 2px; font-size: 15px; }
+.chart-sub { margin: 0 0 12px; font-size: 13px; color: var(--muted); line-height: 1.4; }
+.chart-empty { color: var(--muted); font-size: 14px; padding: 60px 10px; text-align: center; }
+.chart-foot { margin: 6px 0 0; font-size: 12.5px; color: var(--muted); }
+.tip { background: #fff; border: 1px solid var(--line); border-radius: 6px; padding: 8px 11px;
+       font-size: 13px; line-height: 1.5; box-shadow: 0 4px 14px rgba(20, 30, 40, .14); }
+.tip b { display: block; margin-bottom: 2px; }
+
+.masked-val { font-style: italic; }
+.legend-line { display: flex; gap: 16px; font-size: 12.5px; color: var(--muted); margin-top: 6px; }
+.swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+
+@media (max-width: 900px) {
+  .chart-grid { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .loading-bar > div { animation: none; width: 100%; }
+}

@@ -1,0 +1,8 @@
+Flask
+Flask-SQLAlchemy
+psycopg[binary]
+python-dotenv
+Werkzeug
+cryptography
+openpyxl
+reportlab
