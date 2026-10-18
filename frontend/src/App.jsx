@@ -1,6 +1,3 @@
-// App.jsx - routes + a simple route guard.
-// NOTE: the guard only decides what to SHOW. The real security check
-// is done by the Flask backend (role_required) on every API call.
 import { useEffect, useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { api } from "./api.js";
@@ -18,10 +15,9 @@ function Protected({ user, role, children }) {
 }
 
 export default function App() {
-  const [user, setUser] = useState(null);      // { username, role } or null
+  const [user, setUser] = useState(null);      
   const [loading, setLoading] = useState(true);
 
-  // On page load, ask the backend if we already have a valid session
   useEffect(() => {
     api("/me").then((r) => {
       if (r.ok) setUser(r.data);

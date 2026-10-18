@@ -1,4 +1,3 @@
-// DatasetsTab.jsx - list of uploaded datasets with Details and Delete buttons.
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, downloadFile } from "../api.js";
@@ -28,7 +27,6 @@ export default function DatasetsTab() {
 
   useEffect(() => { load(); }, []);
 
-  // while something is still processing, refresh the list every 1.5 seconds
   useEffect(() => {
     if (!datasets || !datasets.some((d) => d.status === "processing")) return;
     const timer = setInterval(load, 1500);
@@ -46,7 +44,6 @@ export default function DatasetsTab() {
     load();
   }
 
-  // The backend decrypts the dataset in memory and sends the processed (sanitised + masked) CSV.
   async function download(d) {
     setMessage(null);
     const res = await downloadFile(`/admin/datasets/${d.id}/download`, "protected_dataset.csv");

@@ -1,5 +1,3 @@
-// ProtectionPanel.jsx - what protects this dataset (sanitisation, masking, encryption).
-// Everything comes from the backend (the stored upload summary + the protected data).
 import { useState } from "react";
 import Pill from "./Pill.jsx";
 import { fmtNum } from "../format.js";

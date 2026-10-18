@@ -1,4 +1,3 @@
-// DatasetDetails.jsx - details of the selected dataset (metadata + security summary).
 import { useEffect, useState } from "react";
 import { api, downloadFile } from "../api.js";
 import useDataset from "../useDataset.js";
@@ -18,7 +17,6 @@ export default function DatasetDetails({ id, onClose }) {
     setPreviewError("");
   }, [id]);
 
-  // The backend decrypts the dataset in memory and sends the first MASKED rows.
   async function loadPreview() {
     setPreviewError("");
     const res = await api(`/admin/datasets/${id}/preview`);

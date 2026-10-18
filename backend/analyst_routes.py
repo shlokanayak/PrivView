@@ -1,10 +1,3 @@
-# analyst_routes.py - every ANALYST-only API route.
-# Two checks protect each dataset route:
-#   1) @role_required("analyst")            -> only the database role "analyst" gets in
-#   2) authorised_dataset()                 -> the admin must have granted THIS dataset to
-#                                              THIS analyst (dataset_access table)
-# The analysis uses only the stored protected copy (decrypted in memory), and analysis.prepare()
-# removes every direct-identifier column first. Analysts get aggregates + the PDF report only.
 import re
 from datetime import datetime
 
@@ -28,11 +21,7 @@ class BadRequest(Exception):
 def iso(moment):
     return moment.isoformat() if moment else None
 
-
-# ---------- access control ----------
-
 def authorised_dataset(dataset_id):
-    """The dataset, but ONLY if it is protected and the admin granted it to this analyst."""
     ds = db.session.get(Dataset, dataset_id)
     access = (DatasetAccess.query.filter_by(dataset_id=dataset_id, user_id=g.user.id).first()
               if ds else None)
@@ -44,7 +33,6 @@ def authorised_dataset(dataset_id):
 
 
 def open_dataset(dataset_id):
-    """Returns (dataset, prepared_data, error_response). Decrypts in memory only."""
     ds = authorised_dataset(dataset_id)
     if ds is None:
         return None, None, (jsonify(error="Dataset not found or not shared with you."), 404)
@@ -61,7 +49,6 @@ def uploader_name(ds):
 
 
 def read_params(P):
-    """Validate the measure / group / filter values sent by the browser."""
     q = request.args
     measure = q.get("measure") or analysis.default_measure(P)
     if measure is not None and measure not in P["measures"]:
@@ -85,13 +72,9 @@ def read_params(P):
             filters[key] = q[key]
     return {"measure": measure, "group_by": group_by, "filters": filters}
 
-
-# ---------- routes ----------
-
 @analyst_bp.route("/api/analyst/datasets")
 @role_required("analyst")
 def list_datasets():
-    """Only datasets granted to the logged-in analyst. A deleted dataset is simply gone."""
     rows = (db.session.query(Dataset, User.username)
             .join(DatasetAccess, DatasetAccess.dataset_id == Dataset.id)
             .join(User, Dataset.uploaded_by == User.id)
@@ -113,7 +96,6 @@ def list_datasets():
 @analyst_bp.route("/api/analyst/datasets/<int:dataset_id>")
 @role_required("analyst")
 def dataset_info(dataset_id):
-    """Opening the workspace: metadata, protection status and the filter options."""
     ds, P, error = open_dataset(dataset_id)
     if error:
         return error

@@ -1,4 +1,3 @@
-// ConfirmDialog.jsx - simple confirmation popup (used before deleting a dataset).
 export default function ConfirmDialog({ title, children, confirmText, busy, onConfirm, onCancel }) {
   return (
     <div className="modal-backdrop" onClick={onCancel}>

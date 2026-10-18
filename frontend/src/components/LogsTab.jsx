@@ -1,4 +1,3 @@
-// LogsTab.jsx - the activity log (audit trail) read from PostgreSQL.
 import { useEffect, useState } from "react";
 import { api } from "../api.js";
 import { actionLabel, formatDate } from "../format.js";

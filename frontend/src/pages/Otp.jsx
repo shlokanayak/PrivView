@@ -11,13 +11,11 @@ export default function Otp({ setUser }) {
   const [secondsLeft, setSecondsLeft] = useState(state?.expiresIn || 0);
   const [resendUsed, setResendUsed] = useState(false);
 
-  // countdown display (the backend decides the real expiry)
   useEffect(() => {
     const timer = setInterval(() => setSecondsLeft((s) => (s > 0 ? s - 1 : 0)), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  // opened /otp directly or refreshed the page -> go back to login
   if (!state) return <Navigate to="/" />;
 
   async function handleVerify(e) {
@@ -27,9 +25,9 @@ export default function Otp({ setUser }) {
     const res = await api("/verify-otp", "POST", { otp });
     if (res.ok) {
       setUser({ username: res.data.username, role: res.data.role });
-      navigate("/" + res.data.role);          // admin -> /admin, analyst -> /analyst
+      navigate("/" + res.data.role);          
     } else if (res.data.restart) {
-      navigate("/");                          // attempt invalidated -> login screen
+      navigate("/");                          
     } else {
       setError(res.data.error);
       setOtp("");

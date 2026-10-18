@@ -17,7 +17,6 @@ export default function Login() {
     const res = await api("/login", "POST", { username, password, role });
     setBusy(false);
     if (res.ok) {
-      // go to the OTP screen and pass the masked email + timer
       navigate("/otp", { state: { email: res.data.email, expiresIn: res.data.expires_in } });
     } else {
       setError(res.data.error || "Login failed");

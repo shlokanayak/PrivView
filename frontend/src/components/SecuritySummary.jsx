@@ -1,5 +1,3 @@
-// SecuritySummary.jsx - the result of each protection layer, exactly as the
-// backend reported it (summary JSON). Nothing here is hard-coded.
 import Pill from "./Pill.jsx";
 import { formatBytes } from "../format.js";
 
@@ -12,7 +10,6 @@ function Row({ label, children }) {
   );
 }
 
-// "3 cells  [neutralised]"  or  "0 cells  [none found]"
 function Found({ count }) {
   return (
     <>

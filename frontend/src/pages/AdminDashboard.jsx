@@ -5,7 +5,6 @@ import DatasetsTab from "../components/DatasetsTab.jsx";
 import UsersTab from "../components/UsersTab.jsx";
 import LogsTab from "../components/LogsTab.jsx";
 
-// Admin Dashboard: three tabs. Every tab loads its data from admin-only Flask routes.
 export default function AdminDashboard({ setUser }) {
   const [tab, setTab] = useState("datasets");
   const tabs = [["datasets", "Datasets"], ["users", "Users and roles"], ["logs", "Activity log"]];

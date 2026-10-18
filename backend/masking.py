@@ -1,23 +1,8 @@
-# masking.py - PRIVACY-PRESERVING ADDITIVE MASKING.
-# This file does NOT sanitise or encrypt. It only hides real numeric values.
-#
-# Method (simple on purpose):
-#   for every sensitive numeric column pick ONE secret random number k (the offset)
-#   and store  masked_value = real_value + k   for every row of that column.
-#
-# What survives (so charts/aggregates stay useful):
-#   count, standard deviation, variance, trends, ordering, correlation between columns.
-# What is hidden:
-#   the real level of the values (a real balance of 1000 is stored as e.g. 6342.17).
-# The backend keeps k inside the ENCRYPTED payload, so it can later turn an aggregate
-# back:  real_mean = masked_mean - k.  k is never sent to the browser.
 import re
 import secrets
 
 from sanitiser import to_number
 
-# Columns whose name contains one of these words are treated as sensitive
-# (financial + medical).  Only NUMERIC columns are ever masked.
 FINANCIAL_KEYWORDS = (
     "salary", "income", "wage", "balance", "amount", "loan", "credit", "debit", "payment",
     "revenue", "profit", "tax", "bill", "charge", "premium", "cost", "expense",
@@ -28,18 +13,9 @@ MEDICAL_KEYWORDS = (
 )
 SENSITIVE_KEYWORDS = FINANCIAL_KEYWORDS + MEDICAL_KEYWORDS
 
-# IDs and codes are not "values", so they are skipped (patient_id, payment_id ...)
 ID_WORDS = ("id", "no", "number", "num", "code", "key", "index")
-NOT_ID_ENDINGS = ("paid", "valid", "void")      # "amount_paid" ends with "id" but is NOT an ID
+NOT_ID_ENDINGS = ("paid", "valid", "void")      
 
-# ---------- DIRECT IDENTIFIERS (names, e-mail, phone, address, Aadhaar / PAN / passport ...) ----------
-# Additive masking only works on numbers, so these fields can never be "masked". Instead they are
-# WITHHELD from analysts completely: analysis.prepare() removes them before any chart, measure,
-# filter, tooltip, API response or PDF is built. They are found in two ways:
-#   1. by the column NAME  (word match, so "company" is not mistaken for "pan")
-#   2. by the column CONTENT (e-mail, Indian phone, Aadhaar, PAN, passport patterns, "Dr. ..." names),
-#      so a column called "col7" full of phone numbers is caught as well.
-# kind -> words that may appear in the column name
 NAME_WORDS = {
     "Email addresses": {"email", "emailid", "mail", "gmail"},
     "Phone numbers": {"phone", "mobile", "mob", "tel", "telephone", "cell", "whatsapp", "contact",
@@ -58,8 +34,7 @@ NAME_WORDS = {
     "Other direct identifiers": {"upi", "vpa", "username", "userid", "login", "ip", "imei",
                                  "mac", "vehicle", "registration"},
 }
-# Words that show the column is a CATEGORY or a TYPE, not a person ("hospital_name", "patient_type",
-# "doctor_specialty", "customer_segment"). Such columns stay usable for group comparisons.
+
 SAFE_WORDS = {"hospital", "branch", "department", "dept", "product", "merchant", "city", "state",
               "company", "bank", "ward", "clinic", "plan", "drug", "medicine", "test", "disease",
               "diagnosis", "procedure", "scheme", "insurer", "insurance", "vendor", "store",
@@ -69,7 +44,7 @@ SAFE_WORDS = {"hospital", "branch", "department", "dept", "product", "merchant",
               "gender", "sex", "tier", "since", "years", "months", "days", "date", "time"}
 STRONG_WORDS = {"email", "emailid", "phone", "mobile", "aadhaar", "aadhar", "adhar", "passport",
                 "address", "pincode", "dob", "birthdate", "birthday", "ssn", "uidai", "gstin",
-                "surname", "firstname", "lastname", "fullname", "username"}   # never "safe"
+                "surname", "firstname", "lastname", "fullname", "username"}   
 
 EMAIL_RE = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
 PAN_RE = re.compile(r"\b[A-Z]{5}\d{4}[A-Z]\b")
@@ -89,7 +64,6 @@ def _simple(name):
 
 
 def is_identifier_like(name):
-    """True for columns that are IDs / codes, e.g. patient_id, PaymentID, account_no."""
     tokens = re.split(r"[^a-z0-9]+", re.sub(r"([a-z0-9])([A-Z])", r"\1 \2", name).lower())
     tokens = [t for t in tokens if t]
     simple = _simple(name)
@@ -101,7 +75,6 @@ def is_identifier_like(name):
 
 
 def category_of(name):
-    """Which kind of sensitive data a masked column holds (shown to analysts)."""
     simple = _simple(name)
     if any(word in simple for word in FINANCIAL_KEYWORDS):
         return "Financial"
@@ -111,7 +84,6 @@ def category_of(name):
 
 
 def detect_column_types(columns, rows):
-    """'numeric' if every non-empty value in the column is a number, else 'text'."""
     types = {}
     for i, col in enumerate(columns):
         values = [row[i] for row in rows if row[i] != ""]
@@ -121,7 +93,6 @@ def detect_column_types(columns, rows):
 
 
 def convert_numeric_columns(columns, rows, types):
-    """Numeric columns become real numbers (empty -> None). Text stays text."""
     new_rows = []
     for row in rows:
         new_row = []
@@ -135,7 +106,6 @@ def convert_numeric_columns(columns, rows, types):
 
 
 def find_sensitive_columns(columns, types):
-    """Numeric columns whose name looks financial/medical."""
     found = []
     for col in columns:
         name = _simple(col)
@@ -147,14 +117,12 @@ def find_sensitive_columns(columns, types):
 
 
 def _words(name):
-    """Words of a column name: 'Patient_Name', 'patientName', 'e-mail' -> {'patient','name'} ..."""
     spaced = re.sub(r"([a-z0-9])([A-Z])", r"\1 \2", name)
     words = [w for w in re.split(r"[^a-z0-9]+", spaced.lower()) if w]
     return set(words) | {_simple(name)}
 
 
 def _cell_text(value):
-    """A cell as text for pattern checks (numbers lose a trailing .0, the ' guard is removed)."""
     if value is None:
         return ""
     if isinstance(value, float) and value.is_integer():
@@ -163,25 +131,21 @@ def _cell_text(value):
 
 
 def identifier_kinds(columns, rows, types):
-    """{column: kind} for every column that holds direct identifiers (name OR content based)."""
     found = {}
     for i, col in enumerate(columns):
         words = _words(col)
         kind = None
-        # 1) by name
         for k, names in NAME_WORDS.items():
             hit = words & names
             if not hit:
                 continue
-            # a category word next to a weak identifier word means "type of", not a person:
-            # hospital_name, patient_type, doctor_specialty, pin_status ...
             if (words & SAFE_WORDS) and not (hit & STRONG_WORDS):
                 continue
             if k == "Names" and "name" not in hit and is_identifier_like(col):
-                continue                     # patient_id, doctor_id: record keys, handled separately
+                continue                     
             kind = k
             break
-        # 2) by content
+        
         if kind is None:
             texts = [t for t in (_cell_text(r[i]) for r in rows) if t]
             if types.get(col) == "numeric":
@@ -204,14 +168,12 @@ def identifier_kinds(columns, rows, types):
 
 
 def find_identifier_columns(columns, rows=None, types=None):
-    """Names of the direct-identifier columns (shown to the admin; analysts never see them)."""
     if rows is None:
         rows, types = [], {}
     return list(identifier_kinds(columns, rows, types))
 
 
 def check_extra_columns(columns, types, requested):
-    """Columns the admin asked to mask manually. Returns (accepted, ignored_messages)."""
     lookup = {c.lower(): c for c in columns}
     accepted, ignored = [], []
     for name in requested:
@@ -226,21 +188,15 @@ def check_extra_columns(columns, types, requested):
 
 
 def _make_offset(values):
-    """Secret offset: 1x to 10x the spread of the column, random sign, from `secrets`."""
     spread = max(values) - min(values)
     if spread == 0:
         spread = abs(values[0]) or 1.0
-    factor = 1 + secrets.randbelow(900) / 100          # 1.00 ... 9.99
+    factor = 1 + secrets.randbelow(900) / 100         
     sign = 1 if secrets.randbelow(2) else -1
     return round(sign * factor * spread, 2)
 
 
 def apply_additive_masking(columns, rows, mask_columns):
-    """Reusable function.
-    columns       list of column names
-    rows          list of rows (numeric columns already converted to numbers)
-    mask_columns  names of the numeric columns to mask
-    Returns (masked_rows, offsets) where offsets = {column: k}. SAME k for every row."""
     offsets = {}
     for col in mask_columns:
         i = columns.index(col)
@@ -259,9 +215,8 @@ def apply_additive_masking(columns, rows, mask_columns):
 
 
 def unmask_stat(stat, value, offset, count=1):
-    """For the Analyst stage: turn an aggregate of masked values back into the real one."""
     if stat in ("mean", "min", "max", "median"):
         return value - offset
     if stat == "sum":
         return value - offset * count
-    return value                                       # count, std, variance are unchanged
+    return value                                    

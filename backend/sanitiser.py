@@ -1,9 +1,3 @@
-# sanitiser.py - INPUT VALIDATION + FILE SANITISATION.
-# This file does NOT mask or encrypt anything. It only:
-#   1. checks that the upload is a real, safe CSV/XLSX file
-#   2. cleans the filename
-#   3. checks the table structure
-#   4. neutralises dangerous cell content (XSS-like HTML/script, formula injection)
 import csv
 import io
 import math
@@ -17,8 +11,8 @@ from html import escape
 import openpyxl
 
 ALLOWED_EXTENSIONS = ("csv", "xlsx")
-MAX_FILE_SIZE = 5 * 1024 * 1024          # 5 MB
-MAX_UNZIPPED_SIZE = 50 * 1024 * 1024     # protects against "zip bombs" inside .xlsx
+MAX_FILE_SIZE = 5 * 1024 * 1024          
+MAX_UNZIPPED_SIZE = 50 * 1024 * 1024    
 MAX_ROWS = 50000
 MAX_COLUMNS = 50
 MAX_CELL_LENGTH = 1000
@@ -27,12 +21,7 @@ MAX_CELL_LENGTH = 1000
 class ValidationError(Exception):
     """The upload is not acceptable. The message is shown to the admin."""
 
-
-# ------------------------------------------------------------------
-# 1. File validation
-# ------------------------------------------------------------------
 def check_file(raw, ext):
-    """Check extension, size and the real file signature (not just the name)."""
     if ext not in ALLOWED_EXTENSIONS:
         raise ValidationError("Only .csv and .xlsx files are allowed.")
     if len(raw) == 0:
@@ -41,14 +30,14 @@ def check_file(raw, ext):
         raise ValidationError(f"The file is larger than {MAX_FILE_SIZE // (1024 * 1024)} MB.")
 
     if ext == "csv":
-        if b"\x00" in raw:                                   # NUL bytes = binary file renamed to .csv
+        if b"\x00" in raw:                                 
             raise ValidationError("This is not a text CSV file (binary data found).")
         try:
             raw.decode("utf-8-sig")
         except UnicodeDecodeError:
             raise ValidationError("The CSV must be saved with UTF-8 encoding.")
     else:
-        if raw[:4] != b"PK\x03\x04":                         # every real .xlsx is a zip file
+        if raw[:4] != b"PK\x03\x04":                      
             raise ValidationError("This is not a real .xlsx file (wrong file signature).")
         try:
             archive = zipfile.ZipFile(io.BytesIO(raw))
@@ -57,23 +46,18 @@ def check_file(raw, ext):
             raise ValidationError("The .xlsx file is corrupted.")
         if "xl/workbook.xml" not in names:
             raise ValidationError("This zip file is not an Excel workbook.")
-        if any("vbaProject" in n for n in names):            # macros
+        if any("vbaProject" in n for n in names):           
             raise ValidationError("Workbooks that contain macros are not allowed.")
         if sum(i.file_size for i in infos) > MAX_UNZIPPED_SIZE:
             raise ValidationError("The workbook expands to an unsafe size.")
     return {"size_bytes": len(raw)}
 
-
-# ------------------------------------------------------------------
-# 2. Filename sanitisation
-# ------------------------------------------------------------------
 def sanitise_filename(filename):
-    """Return (safe_name, changed). Removes folders (../), odd characters, long names."""
     original = str(filename)
-    name = os.path.basename(original.replace("\\", "/"))              # drop any folder part
+    name = os.path.basename(original.replace("\\", "/"))             
     name = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode()
-    name = re.sub(r"[^A-Za-z0-9._-]", "_", name)                      # whitelist characters
-    name = re.sub(r"\.{2,}", ".", name).lstrip(".")                   # no "..", no hidden files
+    name = re.sub(r"[^A-Za-z0-9._-]", "_", name)                    
+    name = re.sub(r"\.{2,}", ".", name).lstrip(".")                 
     if "." in name:
         base, ext = name.rsplit(".", 1)
         name = base[:80] + "." + ext[:10]
@@ -83,15 +67,10 @@ def sanitise_filename(filename):
         name = "dataset"
     return name, name != original
 
-
-# ------------------------------------------------------------------
-# 3. Reading the file + structure validation
-# ------------------------------------------------------------------
 def cell_to_text(value):
-    """Every cell becomes plain text first, so nothing can be 'executed' later."""
     if value is None:
         return ""
-    formula_text = getattr(value, "text", None)          # openpyxl array formulas
+    formula_text = getattr(value, "text", None)          
     if formula_text:
         value = formula_text
     if isinstance(value, (datetime, date)):
@@ -102,18 +81,17 @@ def cell_to_text(value):
 
 
 def read_table(raw, ext):
-    """Return (header_row, data_rows) as lists of text. Formulas are never evaluated."""
     rows = []
     try:
         if ext == "csv":
             text = raw.decode("utf-8-sig")
             first_line = text.split("\n", 1)[0]
-            delimiter = max(",;\t", key=first_line.count)       # most frequent separator
+            delimiter = max(",;\t", key=first_line.count)      
             reader = csv.reader(io.StringIO(text, newline=""), delimiter=delimiter)
             source = reader
         else:
             workbook = openpyxl.load_workbook(io.BytesIO(raw), read_only=True, data_only=False)
-            source = workbook.worksheets[0].iter_rows(values_only=True)   # first sheet only
+            source = workbook.worksheets[0].iter_rows(values_only=True)  
 
         for row in source:
             rows.append([cell_to_text(c) for c in row])
@@ -130,9 +108,8 @@ def read_table(raw, ext):
 
 
 def validate_structure(header, rows):
-    """Check the table shape. Returns (columns, clean_rows, info)."""
     header = list(header)
-    while header and header[-1].strip() == "":               # ignore empty columns at the right
+    while header and header[-1].strip() == "":             
         header.pop()
     if len(header) < 2:
         raise ValidationError("The first row must contain at least 2 column names.")
@@ -149,7 +126,7 @@ def validate_structure(header, rows):
     for line_no, row in enumerate(rows, start=2):
         if any(cell.strip() for cell in row[len(header):]):
             raise ValidationError(f"Row {line_no} has more values than there are column names.")
-        row = row[:len(header)] + [""] * (len(header) - len(row))   # pad short rows
+        row = row[:len(header)] + [""] * (len(header) - len(row))  
         if not any(cell.strip() for cell in row):
             empty_removed += 1
             continue
@@ -162,19 +139,14 @@ def validate_structure(header, rows):
     return header, clean_rows, {"records": len(clean_rows), "columns": len(header),
                                 "empty_rows_removed": empty_removed}
 
-
-# ------------------------------------------------------------------
-# 4. Content sanitisation
-# ------------------------------------------------------------------
-HTML_TAG = re.compile(r"<\s*/?\s*[a-zA-Z!?]")                      # <script>, </div>, <img ...
-JS_SCHEME = re.compile(r"(javascript|vbscript)\s*:", re.I)         # javascript:alert(1)
+HTML_TAG = re.compile(r"<\s*/?\s*[a-zA-Z!?]")                    
+JS_SCHEME = re.compile(r"(javascript|vbscript)\s*:", re.I)       
 HTML_DATA = re.compile(r"data\s*:\s*text/html", re.I)
 EVENT_HANDLER = re.compile(
     r"\b(on(?:error|load|click|mouse\w+|focus|blur|submit|change|input|key\w+))\s*=", re.I)
 
 
 def to_number(text):
-    """'12', '-5.5', '1,200.50' -> float.  Anything else -> None."""
     t = text.strip()
     if re.fullmatch(r"[+-]?\d{1,3}(,\d{3})+(\.\d+)?", t):
         t = t.replace(",", "")
@@ -191,8 +163,7 @@ def looks_dangerous_html(text):
 
 
 def neutralise_html(text):
-    """Turn script-like content into harmless plain text."""
-    text = escape(text, quote=False)                                # < > & become &lt; &gt; &amp;
+    text = escape(text, quote=False)                              
     text = JS_SCHEME.sub(lambda m: m.group(1) + "[blocked]:", text)
     text = HTML_DATA.sub("data[blocked]:text/html", text)
     text = EVENT_HANDLER.sub(lambda m: m.group(1) + "[blocked]=", text)
@@ -200,31 +171,25 @@ def neutralise_html(text):
 
 
 def sanitise_cell(text, counts):
-    """Clean ONE cell and count what was found. `counts` is a dict that is updated."""
     counts["cells_checked"] += 1
 
-    # a) control / invisible characters (hidden text tricks, right-to-left override ...)
     text = re.sub(r"[\t\r\n]+", " ", text)
     cleaned = "".join(ch for ch in text if unicodedata.category(ch) not in ("Cc", "Cf"))
     if cleaned != text:
         counts["control_char_cells"] += 1
     text = cleaned
 
-    # b) very long cells
     if len(text) > MAX_CELL_LENGTH:
         text = text[:MAX_CELL_LENGTH]
         counts["long_cells"] += 1
 
-    # c) XSS-like content: only cells that really contain HTML/script are changed
     if looks_dangerous_html(text):
         text = neutralise_html(text)
         counts["xss_cells"] += 1
 
-    # d) CSV / Excel formula injection: =, +, -, @ at the start.
-    #    Real numbers such as -5 or +3.2 are fine. A lone "-" is also fine.
     start = text.lstrip()
     if start[:1] in ("=", "+", "-", "@") and len(start) > 1 and to_number(start) is None:
-        text = "'" + text            # the apostrophe makes Excel treat the cell as plain text
+        text = "'" + text            
         counts["formula_cells"] += 1
     return text
 
@@ -235,7 +200,6 @@ def new_counts():
 
 
 def sanitise_table(columns, rows):
-    """Sanitise headers and every data cell. Returns (columns, rows, counts)."""
     counts = new_counts()
     new_columns = []
     for name in columns:
@@ -246,7 +210,6 @@ def sanitise_table(columns, rows):
     if len({c.lower() for c in new_columns}) != len(new_columns):
         raise ValidationError("Column names are not unique after cleaning.")
 
-    # also remember WHICH records and fields had something neutralised (shown to analysts)
     def changes():
         return (counts["xss_cells"] + counts["formula_cells"]
                 + counts["control_char_cells"] + counts["long_cells"])
@@ -269,5 +232,4 @@ def sanitise_table(columns, rows):
 
 
 def clean_text_field(text, max_length):
-    """For short form fields (description, column names typed by the admin)."""
     return sanitise_cell(str(text).strip()[:max_length], new_counts())

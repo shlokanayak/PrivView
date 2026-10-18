@@ -1,6 +1,3 @@
-# report_pdf.py - builds the downloadable PDF analysis report (reportlab).
-# It receives the SAME analysis result the workspace shows, so the PDF always matches
-# the screen (same filters, same numbers). Nothing is invented here.
 from datetime import datetime
 from io import BytesIO
 from xml.sax.saxutils import escape
@@ -33,7 +30,7 @@ CELL = ParagraphStyle("Cell", parent=BODY, fontSize=8, leading=10)
 
 
 def p(text, style=BODY):
-    return Paragraph(escape(str(text)), style)      # escape: dataset text can contain & or <
+    return Paragraph(escape(str(text)), style)    
 
 
 def fmt(v):
@@ -45,7 +42,6 @@ def fmt(v):
 
 
 def thin(labels, limit=12):
-    """Show only every n-th axis label so they do not overlap."""
     step = max(1, -(-len(labels) // limit))
     return [l if i % step == 0 else "" for i, l in enumerate(labels)]
 
@@ -94,12 +90,12 @@ def bar_chart(labels, values, width, height=170, signed=False, fixed_range=None,
     c.groupSpacing = 6
     c.bars[0].strokeColor = None
     c.bars[0].fillColor = BLUE
-    if signed:                                          # positive = blue, negative = orange
+    if signed:                                      
         for i, v in enumerate(values):
             c.bars[(0, i)].fillColor = BLUE if v >= 0 else ORANGE
     if fixed_range:
         c.valueAxis.valueMin, c.valueAxis.valueMax = fixed_range
-    elif zero_base:                                    # counts must start at zero
+    elif zero_base:                              
         c.valueAxis.valueMin = 0
     d.add(c)
     return d
@@ -127,8 +123,6 @@ def footer(canvas, doc):
 
 
 def build_report(info, protection, result, params, username):
-    """info: dataset facts, protection: protection_info(), result: analyse() output,
-    params: {measure, group_by, filters}. Returns the PDF as bytes."""
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=18 * mm, rightMargin=18 * mm,
                             topMargin=16 * mm, bottomMargin=18 * mm,
@@ -147,7 +141,6 @@ def build_report(info, protection, result, params, username):
     story += [Spacer(1, 4), table([[p(c, CELL) for c in row] for row in meta],
                                   [32 * mm, 52 * mm, 28 * mm, width - 112 * mm], header=False)]
 
-    # ---- protection
     s, m = protection["sanitisation"], protection["masking"]
     story.append(p("Data protection", H2))
     story.append(table([
@@ -176,7 +169,6 @@ def build_report(info, protection, result, params, username):
     scale = " (masked scale)" if masked else ""
     st = result["stats"]
 
-    # ---- key figures
     story.append(p("Key figures", H2))
     story.append(table([
         [p("Mean" + scale, CELL), p("Median" + scale, CELL), p("Std. deviation", CELL),
@@ -185,7 +177,6 @@ def build_report(info, protection, result, params, username):
          p(fmt(st["min"]), CELL), p(fmt(st["max"]), CELL)],
     ], [width / 5] * 5))
 
-    # ---- charts
     story.append(p("Trend, comparison and distribution", H2))
     tr = result["trend"]
     if tr["available"]:
@@ -221,7 +212,6 @@ def build_report(info, protection, result, params, username):
             bar_chart([c["column"] for c in cor], [c["r"] for c in cor], width, signed=True, fixed_range=(-1, 1)),
             p("Pearson correlation (-1 to +1). Correlations are unaffected by masking.", SMALL)]))
 
-    # ---- summary statistics
     rows = [[p(h, CELL) for h in ["Field", "n", "Mean", "Median", "Std. dev.", "Min", "Max"]]]
     for r in result["summary_stats"]:
         rows.append([p(r["column"] + (" *" if r["masked"] else ""), CELL), p(fmt(r["n"]), CELL),

@@ -1,19 +1,3 @@
-# analysis.py - ANALYST-side calculations.
-# Everything here works ONLY on the protected dataset (sanitised + additively masked)
-# that pipeline.load_protected_dataset() decrypts in memory. The raw upload no longer
-# exists anywhere, so it can never be used.
-#
-# IMPORTANT design rule - "masked scale":
-#   A masked column is stored as  value + k  (k = secret offset). We NEVER subtract k here.
-#   If the analyst got the real mean AND could download the masked data, he could compute
-#   k = masked_mean - real_mean and recover every real value.
-#   So for masked columns:
-#     exact and useful ......... std / variance, correlation, differences between groups,
-#                                changes over time (trend shape), counts
-#     on the masked scale ...... mean, median, min, max, quartiles, histogram positions
-#
-# Privacy threshold: any group, period or filter result with fewer than MIN_GROUP_SIZE
-# records is hidden, so a chart point can never be one single person's record.
 import math
 import re
 import statistics
@@ -37,19 +21,13 @@ GRAIN_KEYS = {
 }
 
 def num(value):
-    """Short number text used in chart labels."""
     if abs(value) >= 1000:
         return f"{value:,.0f}"
     if abs(value) >= 10:
         return f"{value:.1f}"
     return f"{value:.2f}"
 
-
-# ------------------------------------------------------------------
-# 1. Understand the dataset (which columns are measures, categories, dates ...)
-# ------------------------------------------------------------------
 def detect_date_format(values):
-    """Return the strptime format that fits (almost) all values, or None."""
     values = [v for v in values if v]
     if len(values) < 3:
         return None
@@ -68,7 +46,6 @@ def detect_date_format(values):
 
 
 def find_time_axis(P):
-    """A text column that holds dates, or a numeric 'year' column. Else None."""
     for col in P["columns"]:
         if P["types"][col] != "text":
             continue
@@ -92,13 +69,9 @@ def find_time_axis(P):
     return None
 
 
-RECORD_ID_UNIQUE = 0.9        # an ID-like column where >= 90% of values are different = a record key
-
+RECORD_ID_UNIQUE = 0.9     
 
 def withheld_columns(columns, rows, types):
-    """{column: kind} - fields an analyst must NEVER receive in any form:
-       direct identifiers (names, e-mail, phone, address, Aadhaar/PAN/passport, date of birth ...)
-       and record keys (patient_id, txn_id, account_no ... one different value per record)."""
     withheld = masking.identifier_kinds(columns, rows, types)
     for i, col in enumerate(columns):
         if col in withheld or not masking.is_identifier_like(col):
@@ -110,9 +83,6 @@ def withheld_columns(columns, rows, types):
 
 
 def prepare(payload):
-    """Turn the decrypted payload into a structure with column roles.
-    PRIVACY: withheld columns are cut out HERE, before anything else runs. Nothing after this
-    point (measures, groups, filters, charts, tooltips, API output, PDF) can ever see them."""
     columns, types, rows = payload["columns"], payload["column_types"], payload["rows"]
     withheld = withheld_columns(columns, rows, types)
     keep = [i for i, c in enumerate(columns) if c not in withheld]
@@ -121,11 +91,10 @@ def prepare(payload):
     types = {c: types[c] for c in columns}
     kinds = defaultdict(int)
     for kind in withheld.values():
-        kinds[kind] += 1                        # only counts per kind are ever reported, never names
+        kinds[kind] += 1              
     P = {
         "columns": columns, "types": types, "rows": rows,
         "index": {c: i for i, c in enumerate(columns)},
-        # only the NAMES of the masked columns are used; the offsets are never touched
         "masked": set(payload["masking"]["offsets"].keys()) & set(columns),
         "withheld": [{"kind": k, "count": n} for k, n in sorted(kinds.items())],
     }
@@ -141,7 +110,7 @@ def prepare(payload):
             continue
         values = [r[P["index"][c]] for r in rows if r[P["index"][c]] != ""]
         distinct = len(set(values))
-        if 2 <= distinct <= MAX_GROUPS and len(values) / distinct >= 2:   # real categories
+        if 2 <= distinct <= MAX_GROUPS and len(values) / distinct >= 2:  
             P["group_cols"].append(c)
     return P
 
@@ -169,7 +138,6 @@ def field_list(P):
 
 
 def options(P):
-    """What the filter bar offers: measures, "compare by" fields and the date range."""
     groups = [{"name": c} for c in P["group_cols"]]
     time = None
     if P["time"]:
@@ -184,7 +152,6 @@ def options(P):
 
 
 def protection_info(summary, P):
-    """What was done to protect this dataset (taken from the stored upload summary)."""
     san = summary.get("sanitisation") or {}
     masked_cols = [c for c in P["columns"] if c in P["masked"]]
     mask_idx = [P["index"][c] for c in masked_cols]
@@ -199,7 +166,7 @@ def protection_info(summary, P):
             "xss_cells": san.get("xss_cells"),
             "formula_cells": san.get("formula_cells"),
             "control_char_cells": san.get("control_char_cells"),
-            "records_affected": san.get("records_affected"),     # None for older uploads
+            "records_affected": san.get("records_affected"),   
             "fields_affected": san.get("fields_affected"),
             "affected_field_names": san.get("affected_field_names"),
         },
@@ -211,17 +178,12 @@ def protection_info(summary, P):
             "columns": masked_cols,
         },
         "categories": [{"category": k, "columns": v} for k, v in categories.items()],
-        "withheld": P["withheld"],          # e.g. [{"kind": "Names", "count": 2}] - never column names
+        "withheld": P["withheld"],       
         "encryption": (summary.get("encryption") or {}).get("algorithm", "AES-256-GCM"),
         "raw_file_retained": (summary.get("storage") or {}).get("raw_file_retained", False),
     }
 
-
-# ------------------------------------------------------------------
-# 2. Filters
-# ------------------------------------------------------------------
 def select_rows(P, f):
-    """Row numbers that pass the filters: {date_from, date_to}."""
     d_from = datetime.strptime(f["date_from"], "%Y-%m-%d") if f.get("date_from") else None
     d_to = datetime.strptime(f["date_to"], "%Y-%m-%d") if f.get("date_to") else None
     selected = []
@@ -233,10 +195,6 @@ def select_rows(P, f):
         selected.append(n)
     return selected
 
-
-# ------------------------------------------------------------------
-# 3. Calculations
-# ------------------------------------------------------------------
 def describe(values):
     n = len(values)
     q1, q3 = (statistics.quantiles(values, n=4, method="inclusive")[0::2]
@@ -249,7 +207,6 @@ def describe(values):
 
 
 def trend_for(P, idx, measure, overall_std):
-    """Average of the measure per period. Periods with fewer than 3 records are hidden."""
     mi = P["index"][measure]
     rows = P["rows"]
     t = P["time"]
@@ -259,7 +216,7 @@ def trend_for(P, idx, measure, overall_std):
         pairs = [(t["dates"][n], rows[n][mi]) for n in idx
                  if t["dates"][n] is not None and rows[n][mi] is not None]
         chosen = None
-        for g in t["grains"]:                      # finest period that still gives >= 3 usable points
+        for g in t["grains"]:                    
             buckets = defaultdict(list)
             for d, v in pairs:
                 buckets[GRAIN_KEYS[g](d)].append(v)
@@ -267,7 +224,7 @@ def trend_for(P, idx, measure, overall_std):
             if len(buckets) <= MAX_TREND_POINTS and len(valid) >= 3:
                 chosen = (g, buckets, valid)
                 break
-            if len(valid) >= 2:                    # remember a coarser fallback
+            if len(valid) >= 2:                 
                 chosen = chosen if chosen and chosen[0] != "fallback" else ("fallback", g, buckets, valid)
         if chosen and chosen[0] == "fallback":
             chosen = (chosen[1], chosen[2], chosen[3])
@@ -278,7 +235,7 @@ def trend_for(P, idx, measure, overall_std):
             hidden = len(buckets) - len(valid)
             source = t["column"]
 
-    if not points:                                 # no usable dates: use the order of the records
+    if not points:                              
         vals = [rows[n][mi] for n in idx if rows[n][mi] is not None]
         chunks = min(10, len(vals) // MIN_GROUP_SIZE)
         if chunks >= 3:
@@ -307,7 +264,6 @@ def trend_for(P, idx, measure, overall_std):
 
 
 def groups_for(P, idx, measure, group_col):
-    """Compare groups. 'diff_from_overall' is exact even for masked columns."""
     gi, mi = P["index"][group_col], P["index"][measure]
     buckets = defaultdict(list)
     for n in idx:
@@ -346,7 +302,6 @@ def distribution_for(values):
 
 
 def correlations_for(P, idx, measure):
-    """Pearson correlation of the measure with every other numeric field (exact when masked)."""
     mi = P["index"][measure]
     out = []
     for c in P["measures"]:
@@ -360,7 +315,7 @@ def correlations_for(P, idx, measure):
         xs, ys = zip(*pairs)
         try:
             r = statistics.correlation(xs, ys)
-        except statistics.StatisticsError:        # a constant column has no correlation
+        except statistics.StatisticsError:     
             continue
         out.append({"column": c, "masked": c in P["masked"], "r": round(r, 3), "n": len(pairs)})
     out.sort(key=lambda d: abs(d["r"]), reverse=True)
@@ -368,7 +323,6 @@ def correlations_for(P, idx, measure):
 
 
 def analyse(P, f, measure, group_by):
-    """The full analysis shown in the workspace (and written into the PDF report)."""
     total = len(P["rows"])
     idx = select_rows(P, f)
     base = {"records_total": total, "records_selected": len(idx), "min_group_size": MIN_GROUP_SIZE}

@@ -1,6 +1,3 @@
-// UploadDataset.jsx - separate Admin page for uploading a dataset.
-// 1) admin fills the form  2) the file is POSTed to Flask  3) Flask processes it in the
-// background and this page polls the result, so the steps below are the REAL progress.
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "../api.js";
@@ -28,7 +25,6 @@ export default function UploadDataset({ setUser }) {
     e.preventDefault();
     setError("");
 
-    // quick friendly checks (the backend repeats and enforces all of them)
     if (!name.trim()) return setError("Enter a dataset name.");
     if (!file) return setError("Choose a CSV or XLSX file.");
     if (!/\.(csv|xlsx)$/i.test(file.name)) return setError("Only .csv and .xlsx files are allowed.");

@@ -1,6 +1,3 @@
-// UsersTab.jsx - list users, change their role, activate / deactivate them.
-// The page only SENDS the request. The Flask backend decides if it is allowed
-// (for example: nobody can change their own role, the last admin is protected).
 import { useEffect, useState } from "react";
 import { api } from "../api.js";
 import { formatDate } from "../format.js";
@@ -22,7 +19,7 @@ export default function UsersTab() {
     const res = await api(`/admin/users/${user.id}`, "PATCH", changes);
     setMessage(res.ok ? { type: "ok", text: res.data.message }
                       : { type: "bad", text: res.data.error });
-    load();     // reload so the table always shows what the database really holds
+    load();     
   }
 
   if (!users) return <p className="muted">Loading users...</p>;

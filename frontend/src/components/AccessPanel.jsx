@@ -1,5 +1,3 @@
-// AccessPanel.jsx - Admin decides which analysts may analyse this dataset.
-// Grant / revoke is saved in the dataset_access table by the Flask backend.
 import { useEffect, useState } from "react";
 import { api } from "../api.js";
 import Pill from "./Pill.jsx";

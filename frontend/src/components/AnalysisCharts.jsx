@@ -1,13 +1,11 @@
-// AnalysisCharts.jsx - the four charts of the workspace (Recharts, interactive tooltips).
-// Every data point is calculated by the backend from the protected dataset.
 import {
   Bar, BarChart, CartesianGrid, Cell, Line, LineChart, ReferenceLine,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
 import { fmtNum } from "../format.js";
 
-const BLUE = "#2a78d6";     // above average / positive
-const ORANGE = "#eb6834";   // below average / negative
+const BLUE = "#2a78d6";    
+const ORANGE = "#eb6834";  
 const GRID = "#e6eaf0";
 const axis = { tick: { fontSize: 12, fill: "#5f6f7e" }, stroke: "#c3ccd6" };
 const short = (text) => (text.length > 16 ? text.slice(0, 15) + "…" : text);
@@ -23,7 +21,6 @@ function Card({ title, subtitle, children, foot }) {
   );
 }
 
-// Tooltip box. `build` receives the hovered data point and returns lines of text.
 function Tip({ active, payload, build }) {
   if (!active || !payload || !payload.length) return null;
   const lines = build(payload[0].payload);

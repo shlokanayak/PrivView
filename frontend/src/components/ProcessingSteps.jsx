@@ -1,6 +1,3 @@
-// ProcessingSteps.jsx - shows the pipeline steps.
-// The status of every step ("pending" / "running" / "done" / "failed") and its
-// detail text come from the backend, so this is a live view of the real processing.
 export default function ProcessingSteps({ steps }) {
   const done = steps.filter((s) => s.status === "done").length;
   const failed = steps.some((s) => s.status === "failed");

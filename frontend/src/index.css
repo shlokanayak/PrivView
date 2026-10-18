@@ -16,9 +16,6 @@ button.link:disabled { color: #94a3b8; }
 .ok { color: #067647; }
 .center { text-align: center; margin-top: 80px; }
 
-/* =====================================================================
-   Stage 2 - admin pages (everything below is new)
-   ===================================================================== */
 :root {
   --ink: #18242f;
   --muted: #5f6f7e;
@@ -35,7 +32,6 @@ button.link:disabled { color: #94a3b8; }
 .admin code { font-family: Consolas, Menlo, monospace; font-size: 13px; background: #eef1f5;
               padding: 1px 6px; border-radius: 4px; word-break: break-all; }
 
-/* ---- top bar ---- */
 .topbar { background: #fff; border-bottom: 1px solid var(--line); }
 .topbar-inner { max-width: 1100px; margin: 0 auto; padding: 0 20px; height: 58px;
                 display: flex; align-items: center; gap: 28px; }
@@ -47,7 +43,6 @@ button.link:disabled { color: #94a3b8; }
 .nav a:hover { background: #f1f4f8; }
 .nav a.active { color: var(--primary); background: #e8eefc; }
 
-/* ---- page layout ---- */
 .page { max-width: 1100px; margin: 0 auto; padding: 28px 20px 60px; }
 .page-narrow { max-width: 820px; }
 .page-head { display: flex; justify-content: space-between; align-items: flex-start;
@@ -66,7 +61,6 @@ button.link:disabled { color: #94a3b8; }
 .form-actions { margin-top: 22px; display: flex; gap: 10px; }
 .empty { color: var(--muted); text-align: center; padding: 28px 0; }
 
-/* ---- buttons (class selectors override the global "button" rule) ---- */
 .btn { display: inline-block; margin: 0; padding: 9px 16px; border: 1px solid var(--primary);
        border-radius: 6px; background: var(--primary); color: #fff; font-size: 14px;
        font-weight: 500; text-decoration: none; cursor: pointer; line-height: 1.3; }
@@ -83,14 +77,12 @@ button.link:disabled { color: #94a3b8; }
 .btn-danger-outline:hover:not(:disabled) { background: #fdf0ef; }
 .btn-danger-outline:disabled { background: #fff; border-color: #e5e9ee; color: #b0b8c1; }
 
-/* ---- tabs ---- */
 .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 20px; }
 .tab { margin: 0 0 -1px; padding: 10px 16px; background: none; border: 0; border-bottom: 2px solid transparent;
        border-radius: 0; color: var(--muted); font-size: 14px; font-weight: 500; cursor: pointer; }
 .tab:hover { color: var(--ink); }
 .tab-active { color: var(--primary); border-bottom-color: var(--primary); }
 
-/* ---- tables ---- */
 .table-wrap { overflow-x: auto; }
 .table { width: 100%; border-collapse: collapse; }
 .table th, .table td { padding: 11px 12px; text-align: left; border-bottom: 1px solid var(--line);
@@ -107,7 +99,6 @@ button.link:disabled { color: #94a3b8; }
        padding: 1px 7px; border-radius: 10px; }
 .select-inline { width: auto; margin: 0; padding: 6px 8px; font-size: 14px; background: #fff; }
 
-/* ---- pills, chips, notices ---- */
 .pill { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 12.5px;
         font-weight: 600; white-space: nowrap; }
 .pill-ok { background: #e3f4ee; color: var(--ok); }
@@ -126,7 +117,6 @@ button.link:disabled { color: #94a3b8; }
 .notice-bad { background: #fbe7e5; color: #8e1f19; border: 1px solid #f0c3bf; }
 .warn-text { color: var(--warn); }
 
-/* ---- details panel ---- */
 .meta-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px 24px; margin-top: 16px; font-size: 14px; }
 .meta-label { display: block; font-size: 12.5px; color: var(--muted); margin-bottom: 2px; }
 .summary-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
@@ -139,7 +129,6 @@ button.link:disabled { color: #94a3b8; }
 .kv-label { color: var(--muted); }
 .kv-value { text-align: right; }
 
-/* ---- live processing steps ---- */
 .progress { height: 6px; background: #e5eaf0; border-radius: 3px; overflow: hidden; margin-bottom: 14px; }
 .progress > div { height: 100%; background: var(--primary); transition: width .4s ease; }
 .progress > .bar-failed { background: var(--bad); }
@@ -159,7 +148,6 @@ button.link:disabled { color: #94a3b8; }
            border-radius: 50%; animation: spin .8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ---- confirmation popup ---- */
 .modal-backdrop { position: fixed; inset: 0; background: rgba(20, 30, 40, .45);
                   display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 10; }
 .modal { background: #fff; border-radius: 10px; padding: 24px; max-width: 440px; width: 100%;
@@ -168,7 +156,6 @@ button.link:disabled { color: #94a3b8; }
 .modal-body { font-size: 14.5px; line-height: 1.5; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
 
-/* ---- small form bits ---- */
 .toolbar { display: flex; align-items: center; gap: 14px; }
 .check { display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 14px; color: var(--muted); }
 .check input { width: auto; margin: 0; }

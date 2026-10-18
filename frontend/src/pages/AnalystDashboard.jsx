@@ -6,8 +6,6 @@ import Header from "../components/Header.jsx";
 import Pill from "../components/Pill.jsx";
 import "../analyst.css";
 
-// Analyst dashboard: ONLY the datasets the admin granted to this analyst.
-// The list comes from GET /api/analyst/datasets (backend checks role + dataset_access).
 export default function AnalystDashboard({ setUser }) {
   const [datasets, setDatasets] = useState(null);
   const [error, setError] = useState("");

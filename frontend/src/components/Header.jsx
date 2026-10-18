@@ -1,7 +1,6 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { api } from "../api.js";
 
-// Top bar shown on the admin and analyst pages.
 export default function Header({ setUser, role = "admin" }) {
   const navigate = useNavigate();
 

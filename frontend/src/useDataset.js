@@ -1,5 +1,3 @@
-// useDataset.js - loads one dataset from the backend and keeps refreshing it
-// while the backend is still processing it. This is what drives the live steps.
 import { useEffect, useState } from "react";
 import { api } from "./api.js";
 

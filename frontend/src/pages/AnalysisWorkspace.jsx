@@ -9,10 +9,6 @@ import AnalysisCharts from "../components/AnalysisCharts.jsx";
 import { StatsTable, GroupTable } from "../components/StatsTable.jsx";
 import "../analyst.css";
 
-// Protected Analysis Workspace for ONE dataset.
-// 1) GET /analyst/datasets/:id          -> metadata, protection status, filter options
-// 2) GET /analyst/datasets/:id/analysis -> every number and chart, recalculated by the backend
-//    each time a filter changes (from the decrypted protected copy, in memory).
 export default function AnalysisWorkspace({ setUser }) {
   const { id } = useParams();
   const [meta, setMeta] = useState(null);
@@ -41,7 +37,6 @@ export default function AnalysisWorkspace({ setUser }) {
     });
   }, [id]);
 
-  // the same query string drives the analysis AND the PDF report
   const query = useMemo(() => {
     const q = new URLSearchParams();
     if (measure) q.set("measure", measure);

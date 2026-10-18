@@ -1,9 +1,4 @@
--- PrivView database schema (PostgreSQL)
--- Run with:  psql -U privview_user -d privview -f schema.sql
-
 DROP TABLE IF EXISTS activity_logs, dataset_access, datasets, login_attempts, users CASCADE;
-
--- 1. Users (no signup page: rows are created by seed.py)
 CREATE TABLE users (
     id            SERIAL PRIMARY KEY,
     username      VARCHAR(50)  NOT NULL UNIQUE,
@@ -14,20 +9,18 @@ CREATE TABLE users (
     created_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
 
--- 2. One row per login try (holds the OTP state for MFA)
 CREATE TABLE login_attempts (
     id           SERIAL PRIMARY KEY,
     user_id      INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    otp_hash     VARCHAR(255) NOT NULL,          -- OTP is stored hashed, never plain
+    otp_hash     VARCHAR(255) NOT NULL,         
     expires_at   TIMESTAMPTZ  NOT NULL,
-    resend_count INTEGER      NOT NULL DEFAULT 0, -- max 1
-    wrong_count  INTEGER      NOT NULL DEFAULT 0, -- max 2 wrong entries
+    resend_count INTEGER      NOT NULL DEFAULT 0, 
+    wrong_count  INTEGER      NOT NULL DEFAULT 0, 
     status       VARCHAR(20)  NOT NULL DEFAULT 'pending'
                  CHECK (status IN ('pending', 'verified', 'failed', 'replaced')),
     created_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
 
--- 3. Datasets (Stage 2: file info + processing result + ENCRYPTED protected data)
 CREATE TABLE datasets (
     id             SERIAL PRIMARY KEY,
     name           VARCHAR(100) NOT NULL,
@@ -45,7 +38,6 @@ CREATE TABLE datasets (
     nonce          BYTEA
 );
 
--- 4. Which analyst may use which dataset (many-to-many link table)
 CREATE TABLE dataset_access (
     id          SERIAL PRIMARY KEY,
     dataset_id  INTEGER     NOT NULL REFERENCES datasets(id) ON DELETE CASCADE,
@@ -55,10 +47,9 @@ CREATE TABLE dataset_access (
     UNIQUE (dataset_id, user_id)
 );
 
--- 5. Audit trail of important actions
 CREATE TABLE activity_logs (
     id         SERIAL PRIMARY KEY,
-    user_id    INTEGER REFERENCES users(id) ON DELETE SET NULL,  -- NULL if user unknown
+    user_id    INTEGER REFERENCES users(id) ON DELETE SET NULL,  
     action     VARCHAR(50) NOT NULL,
     details    TEXT,
     ip_address VARCHAR(45),

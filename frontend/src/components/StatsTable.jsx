@@ -1,8 +1,6 @@
-// StatsTable.jsx - summary statistics + group comparison tables (all from the backend).
 import { fmtNum } from "../format.js";
 import Pill from "./Pill.jsx";
 
-// Level figures (mean, median, min ...) of a masked field are on the masked scale.
 const LEVEL = "masked-val";
 
 export function StatsTable({ rows }) {

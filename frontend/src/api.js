@@ -1,6 +1,3 @@
-// api.js - small helpers to call the Flask backend.
-// The session cookie is sent automatically by the browser.
-// If `body` is a FormData (file upload) it is sent as it is, otherwise as JSON.
 export async function api(path, method = "GET", body) {
   const isForm = body instanceof FormData;
   const res = await fetch("/api" + path, {
@@ -12,8 +9,6 @@ export async function api(path, method = "GET", body) {
   return { ok: res.ok, status: res.status, data };
 }
 
-// Downloads a file from the backend (CSV / PDF). The browser sends the session cookie;
-// if the backend refuses, its JSON error message is returned instead of saving a file.
 export async function downloadFile(path, fallbackName) {
   const res = await fetch("/api" + path);
   if (!res.ok) {
