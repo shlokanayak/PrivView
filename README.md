@@ -1,6 +1,6 @@
 # PrivView
 
-## Honours - Cyber Security & Forensics | Cyber Forensics & Laws | Lab CA Mini Project | Semester V | TY Computer Engineering (2026-27)
+### Honours - Cyber Security & Forensics | Cyber Forensics & Laws | Lab CA Mini Project | Semester V | TY Computer Engineering (2026-27)
 
 **Team Members:**
 - Shloka Nayak - 16010124202
@@ -53,7 +53,7 @@ An admin uploads a CSV or Excel file. The system cleans it, hides the sensitive 
 | File validation | Only CSV and XLSX, max 5 MB, real file signature check, no macros, zip bomb size limit, limits on rows, columns and cell length | `sanitiser.py` |
 | Filename cleaning | Folder parts and unsafe characters are removed | `sanitiser.py` |
 | Content sanitisation | All cells are read as text so formulas never run. HTML and script content is escaped and marked `[blocked]`. Cells starting with `=`, `+`, `-` or `@` get a leading apostrophe. Hidden control characters are removed | `sanitiser.py` |
-| Additive masking | Sensitive numeric columns (financial and medical) get a secret random constant added. See below | `masking.py` |
+| Additive masking | Sensitive numeric columns (financial and medical) get a secret random constant added | `masking.py` |
 | Identifier withholding | Names, emails, phones, addresses, Aadhaar, PAN, passport, date of birth and record IDs are found by column name and by content patterns. They are removed before any analysis, chart or PDF is made | `masking.py`, `analysis.py` |
 | Small group rule | Groups, periods and results with fewer than 3 records are hidden | `analysis.py` |
 | Encryption at rest | The processed data is encrypted with AES-256-GCM using a random 12 byte nonce. The dataset id is used as associated data. The key is kept in `.env` | `crypto_utils.py`, `pipeline.py` |
@@ -109,7 +109,7 @@ Open `.env` in a text editor and fill in:
 | `SMTP_HOST` and `SMTP_PORT` | `smtp.gmail.com` and `587` |
 | `SMTP_USER` | the Gmail address that sends the OTP |
 | `SMTP_APP_PASSWORD` | the Gmail App Password |
-| `DATA_ENCRYPTION_KEY` | a 32 byte key, made with the command below |
+| `DATA_ENCRYPTION_KEY` | a 32 byte key |
 
 Make the encryption key using:
 
@@ -120,7 +120,7 @@ python -c "import os,base64; print(base64.b64encode(os.urandom(32)).decode())"
 Keep this key safe. If it is lost or changed, datasets that are already stored cannot be opened again.
 
 ### 4. Create the users
-There is no signup page. Open `backend/seed.py` and replace the email addresses with real inboxes you can open, because the OTP is sent there. Then run:
+Open `backend/seed.py` and replace the email addresses with real inboxes you can open, because the OTP is sent there. Then run:
 
 ```
 python seed.py
